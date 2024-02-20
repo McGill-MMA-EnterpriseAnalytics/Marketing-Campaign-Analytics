@@ -6,9 +6,35 @@ Created on Mon Feb 19 11:19:33 2024
 """
 #import raw
 import pandas as pd
+import matplotlib.pyplot as plt
+from pathlib import Path
+#-----------------------------------------------------------------------------------------
+DATA_PATH = Path() / "../data"
+DATA_PATH.mkdir(parents=True,exist_ok=True)
 
-ifood_df = pd.read_csv('C:/Users/Tony/Desktop/Code repos/ifood_df.csv')
+def load_data(filename, data_path=DATA_PATH,encoding='ISO-8859-1'):
+    csv_path = data_path / filename
+    return pd.read_csv(csv_path,encoding=encoding)
 
+def save_data(data, filename, data_path=DATA_PATH,encoding='ISO-8859-1'):
+    csv_path = data_path / filename
+    data.to_csv(csv_path, index=False,encoding='ISO-8859-1')
+
+PLOT_PATH = Path() / "../plot"
+PLOT_PATH.mkdir(parents=True,exist_ok=True)
+
+def save_fig(fig_id, tight_layout=True, fig_extension="png", resolution=300, transparent=True):
+    path = PLOT_PATH / f"{fig_id}.{fig_extension}"
+    print("Saving figure", fig_id)
+    if tight_layout:
+        plt.tight_layout()
+    plt.savefig(path, format=fig_extension, dpi=resolution, transparent=transparent)
+#ifood_df = pd.read_csv('C:/Users/Tony/Desktop/Code repos/ifood_df.csv')
+from pathlib import Path
+file_path = Path("../data/ifood_df.csv")
+print(file_path.exists())
+ifood_df = load_data('ifood_df.csv')
+#-----------------------------------------------------------------------------------------
 ifood_df.drop(columns=['Z_CostContact', 'Z_Revenue'], inplace=True)
 
 #split dataset
