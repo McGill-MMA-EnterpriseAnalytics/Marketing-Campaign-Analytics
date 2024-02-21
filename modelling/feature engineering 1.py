@@ -6,35 +6,9 @@ Created on Mon Feb 19 11:19:33 2024
 """
 #import raw
 import pandas as pd
-import matplotlib.pyplot as plt
-from pathlib import Path
-#-----------------------------------------------------------------------------------------
-DATA_PATH = Path() / "../data"
-DATA_PATH.mkdir(parents=True,exist_ok=True)
 
-def load_data(filename, data_path=DATA_PATH,encoding='ISO-8859-1'):
-    csv_path = data_path / filename
-    return pd.read_csv(csv_path,encoding=encoding)
+ifood_df = pd.read_csv('C:/Users/Tony/Desktop/Code repos/ifood_df.csv')
 
-def save_data(data, filename, data_path=DATA_PATH,encoding='ISO-8859-1'):
-    csv_path = data_path / filename
-    data.to_csv(csv_path, index=False,encoding='ISO-8859-1')
-
-PLOT_PATH = Path() / "../plot"
-PLOT_PATH.mkdir(parents=True,exist_ok=True)
-
-def save_fig(fig_id, tight_layout=True, fig_extension="png", resolution=300, transparent=True):
-    path = PLOT_PATH / f"{fig_id}.{fig_extension}"
-    print("Saving figure", fig_id)
-    if tight_layout:
-        plt.tight_layout()
-    plt.savefig(path, format=fig_extension, dpi=resolution, transparent=transparent)
-#ifood_df = pd.read_csv('C:/Users/Tony/Desktop/Code repos/ifood_df.csv')
-from pathlib import Path
-file_path = Path("../data/ifood_df.csv")
-print(file_path.exists())
-ifood_df = load_data('ifood_df.csv')
-#-----------------------------------------------------------------------------------------
 ifood_df.drop(columns=['Z_CostContact', 'Z_Revenue'], inplace=True)
 
 #split dataset
@@ -58,7 +32,7 @@ def feature_engineering_1(df):
     
     # Total Campaigns Accepted
     campaigns_cols = [col for col in df.columns if 'Cmp' in col]
-    df.drop(columns=campaigns_cols, inplace=True)  # Corrected line
+    df['response'] = df[campaigns_cols].any(axis=1).astype(int)
     return df
 
 #define rfm group
@@ -178,28 +152,40 @@ def dimension_reduction(df, n_components):
 train_df = feature_engineering_1(train_df)
 train_df = assign_rfm_groups(train_df)
 train_df = assign_age_demographic(train_df)
-train_df= feature_selection_lasso(train_df, target_column)
 
 test_df = feature_engineering_1(test_df)
 test_df = assign_rfm_groups(test_df)
 test_df = assign_age_demographic(test_df)
 
-
-common_columns = set(train_df.columns).intersection(set(test_df.columns))
-train_df = train_df[list(common_columns)]
-test_df = test_df[list(common_columns)]
-
+from sklearn.preprocessing import StandardScaler
 scaler = StandardScaler()
-test_df = pd.DataFrame(scaler.fit_transform(test_df), columns=test_df.columns, index=test_df.index)
+df = test_df
+campaigns_cols = [col for col in df.columns if 'Cmp' in col]
+exclude_cols = campaigns_cols + ['response']
+cols_to_transform = [col for col in test_df.columns if col not in exclude_cols]
+transformed_data = scaler.fit_transform(test_df[cols_to_transform])
+transformed_df = pd.DataFrame(transformed_data, columns=cols_to_transform, index=test_df.index)
+test_df[cols_to_transform] = transformed_df
 
+
+df = train_df
+campaigns_cols = [col for col in df.columns if 'Cmp' in col]
+exclude_cols = campaigns_cols + ['response']
+cols_to_transform = [col for col in train_df.columns if col not in exclude_cols]
+transformed_data = scaler.fit_transform(train_df[cols_to_transform])
+transformed_df = pd.DataFrame(transformed_data, columns=cols_to_transform, index=train_df.index)
+train_df[cols_to_transform] = transformed_df
+
+
+#common_columns = set(train_df.columns).intersection(set(test_df.columns))
+#train_df = train_df[list(common_columns)]
+#test_df = test_df[list(common_columns)]
 
 # Store data files
 folder_path = 'C:/Users/Tony/Desktop/Code repos/'
 
 train_df.to_csv(folder_path + 'train_df.csv', index=False)
 test_df.to_csv(folder_path + 'test_df.csv', index=False)
-
-
 
 
 
